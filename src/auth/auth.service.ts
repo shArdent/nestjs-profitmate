@@ -9,6 +9,8 @@ import { UserRecord } from 'firebase-admin/lib/auth/user-record';
 import { FirebaseService } from 'src/common/firebase.module';
 import { RegisterUserDto } from './dto/register-user.dto';
 import { UserService } from 'src/user/user.service';
+import { LoginUserDto } from './dto/login-user.dto';
+import axios from 'axios';
 
 @Injectable()
 export class AuthService {
@@ -16,6 +18,8 @@ export class AuthService {
     @Inject('FIREBASE_ADMIN') private readonly firebase: FirebaseService,
     private readonly userService: UserService,
   ) {}
+
+  private FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
 
   async decodeToken(token: string): Promise<DecodedIdToken> {
     return this.firebase.auth.verifyIdToken(token);
@@ -65,5 +69,31 @@ export class AuthService {
     await this.userService.create(createUserData);
 
     return createUserData;
+  }
+
+  async loginUser(loginUserDto: LoginUserDto) {
+    try {
+      const { email, password } = loginUserDto;
+
+      const response = await axios.post(
+        `https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?key=${this.FIREBASE_API_KEY}`,
+        {
+          email,
+          password,
+          returnSecureToken: true,
+        },
+      );
+
+      const { idToken, refreshToken, localId } = response.data;
+
+      return {
+        userId: localId,
+        email,
+        idToken,
+        refreshToken,
+      };
+    } catch (error) {
+      throw new InternalServerErrorException(error);
+    }
   }
 }
