@@ -13,6 +13,7 @@ import { UserService } from 'src/user/user.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import axios from 'axios';
 import { RequestWithUser } from 'src/common/types/req-with-user';
+import { Response } from 'express';
 
 @Injectable()
 export class AuthService {
@@ -101,12 +102,10 @@ export class AuthService {
 
   async refreshTokenUser(req: RequestWithUser) {
     try {
-      if (!req.headers.refreshtoken) {
+      if (!req.cookies['refreshToken']) {
         throw new BadRequestException('Invalid or missing refresh token');
       }
-      const newTokens = await this.refreshToken(
-        req.headers.refreshtoken as string,
-      );
+      const newTokens = await this.refreshToken(req.cookies['refreshToken']);
 
       return {
         newIdToken: newTokens.id_token,
@@ -124,5 +123,13 @@ export class AuthService {
       { grant_type: 'refresh_token', refresh_token: refreshToken },
     );
     return res.data;
+  }
+
+  async logout(res: Response) {
+    res.clearCookie('refreshToken');
+    res.status(200).json({
+      statusCode: 200,
+      message: 'successfully logged out',
+    });
   }
 }

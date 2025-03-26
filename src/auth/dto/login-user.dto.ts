@@ -1,5 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, Length, Matches } from 'class-validator';
+import {
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  Length,
+  Matches,
+} from 'class-validator';
 
 export class LoginUserDto {
   @ApiProperty({ description: 'Email user', example: 'udin@gmail.com' })
@@ -15,4 +22,9 @@ export class LoginUserDto {
   @Matches(/[A-Z]/)
   @Matches(/[0-9]/)
   password: string;
+
+  @ApiProperty({ description: 'Simpan refresh token untuk user jika true' })
+  @IsBoolean()
+  @IsOptional()
+  remember?: boolean;
 }
