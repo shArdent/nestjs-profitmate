@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Inject,
   Injectable,
@@ -11,6 +12,7 @@ import { RegisterUserDto } from './dto/register-user.dto';
 import { UserService } from 'src/user/user.service';
 import { LoginUserDto } from './dto/login-user.dto';
 import axios from 'axios';
+import { RequestWithUser } from 'src/common/types/req-with-user';
 
 @Injectable()
 export class AuthService {
@@ -95,5 +97,32 @@ export class AuthService {
     } catch (error) {
       throw new InternalServerErrorException(error);
     }
+  }
+
+  async refreshTokenUser(req: RequestWithUser) {
+    try {
+      if (!req.headers.refreshtoken) {
+        throw new BadRequestException('Invalid or missing refresh token');
+      }
+      const newTokens = await this.refreshToken(
+        req.headers.refreshtoken as string,
+      );
+
+      return {
+        newIdToken: newTokens.id_token,
+        newRefreshToken: newTokens.refresh_token,
+      };
+    } catch (error) {
+      throw new BadRequestException('Invalid or missing refresh token');
+    }
+  }
+
+  private async refreshToken(refreshToken: string) {
+    const FIREBASE_API_KEY = process.env.FIREBASE_API_KEY;
+    const res = await axios.post(
+      `https://securetoken.googleapis.com/v1/token?key=${FIREBASE_API_KEY}`,
+      { grant_type: 'refresh_token', refresh_token: refreshToken },
+    );
+    return res.data;
   }
 }
